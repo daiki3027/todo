@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>TODOアプリ</title>
+  <style>
+    :root{
+      --bg:#f6f8ff; --panel:#fff; --line:#e6e9f3;
+      --text:#222; --muted:#667; --accent:#4a90e2; --danger:#e74c3c;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font:16px/1.6 system-ui, sans-serif; color:var(--text);
+      background:linear-gradient(180deg,#fff,#f6f8ff 60%, #eef2fb);
+      min-height:100dvh; display:grid; place-items:start center;
+    }
+    .app{ width:min(760px,94%); margin:48px auto; }
+    .card{
+      background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px;
+      box-shadow:0 6px 14px rgba(0,0,0,.06);
+    }
+    h1{ margin:0 0 12px; font-size:22px }
+    .badge{ margin-left:.6rem; font-size:12px; color:var(--muted);
+      border:1px solid var(--line); padding:2px 8px; border-radius:999px; }
+
+    .row{ display:flex; gap:10px; margin:8px 0 10px }
+    .input{ flex:1; padding:10px 12px; border:1px solid var(--line); border-radius:8px; outline:none; }
+    .input:focus{ border-color:var(--accent); box-shadow:0 0 0 2px rgba(74,144,226,.25) }
+    .btn{ border:0; cursor:pointer; padding:10px 14px; border-radius:8px; font-weight:600; background:var(--accent); color:#fff; }
+
+    ul{ list-style:none; margin:0; padding:0 }
+    li{ display:flex; align-items:center; gap:10px; background:#fafbff; border:1px solid var(--line);
+        padding:10px; border-radius:8px; margin:6px 0; }
+    li input[type="checkbox"]{ width:18px; height:18px }
+    .title.done{ text-decoration:line-through; color:var(--muted) }
+    .spacer{ flex:1 }
+    .del{ border:0; cursor:pointer; padding:6px 10px; border-radius:6px; background:var(--danger); color:#fff; font-weight:600; }
+
+    .hint{ color:var(--muted); font-size:12px; margin-top:6px; text-align:right }
+    @media (max-width:560px){ .row{ flex-direction:column } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="card">
+      <h1>TODOアプリ <span class="badge">Vanilla JS</span></h1>
+
+      <div class="row">
+        <input id="todoInput" class="input" type="text" placeholder="やることを入力" />
+        <button id="addBtn" class="btn">追加</button>
+      </div>
+
+      <ul id="todoList"></ul>
+      <div class="hint">Enterで追加 / チェックで完了 / 削除で削除（保存先: LocalStorage）</div>
+    </div>
+  </div>
+
+  <script>
+    const input = document.getElementById("todoInput");
+    const addBtn = document.getElementById("addBtn");
+    const todoList = document.getElementById("todoList");
+
+    let todos = JSON.parse(localStorage.getItem("todos") || "[]");
+
+    function save(){ localStorage.setItem("todos", JSON.stringify(todos)); }
+
+    function render(){
+      todoList.innerHTML = "";
+      todos.forEach((t, i) => {
+        const li = document.createElement("li");
+
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = t.done;
+        cb.onchange = () => {
+          todos[i].done = cb.checked;
+          save();
+          title.classList.toggle("done", cb.checked);
+        };
+
+        const title = document.createElement("span");
+        title.className = "title" + (t.done ? " done" : "");
+        title.textContent = t.text;
+
+        const spacer = document.createElement("span");
+        spacer.className = "spacer";
+
+        const del = document.createElement("button");
+        del.className = "del";
+        del.textContent = "削除";
+        del.onclick = () => {
+          todos.splice(i, 1);
+          save();
+          render();
+        };
+
+        li.appendChild(cb);
+        li.appendChild(title);
+        li.appendChild(spacer);
+        li.appendChild(del);
+        todoList.appendChild(li);
+      });
+    }
+
+    function add(){
+      const text = input.value.trim();
+      if(!text) return;
+      todos.push({ text, done:false });
+      save();
+      render();
+      input.value = "";
+      input.focus();
+    }
+
+    addBtn.addEventListener("click", add);
+    input.addEventListener("keydown", e => { if(e.key === "Enter") add(); });
+
+    render();
+  </script>
+</body>
+</html>
