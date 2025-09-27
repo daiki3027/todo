@@ -1,9 +1,10 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const { PrismaClient } = require('@prisma/client');
 
 const app = express();
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({ log: ['query', 'error', 'warn'] });
 
 app.use(express.json());
 
@@ -21,6 +22,7 @@ app.get('/api/todos', async (req, res) => {
     const todos = await prisma.todo.findMany({ orderBy: { id: 'asc' } });
     res.json(todos);
   } catch (err) {
+    console.error('GET /api/todos error:', err);
     res.status(500).json({ error: 'Failed to fetch todos' });
   }
 });
@@ -35,6 +37,7 @@ app.post('/api/todos', async (req, res) => {
     const todo = await prisma.todo.create({ data: { title: title.trim() } });
     res.status(201).location(`/api/todos/${todo.id}`).json(todo);
   } catch (err) {
+    console.error('POST /api/todos error:', err);
     res.status(500).json({ error: 'Failed to create todo' });
   }
 });
@@ -51,6 +54,7 @@ app.put('/api/todos/:id', async (req, res) => {
     res.json(todo);
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ error: 'not found' });
+    console.error('PUT /api/todos/:id error:', err);
     res.status(500).json({ error: 'Failed to update todo' });
   }
 });
@@ -64,6 +68,7 @@ app.delete('/api/todos/:id', async (req, res) => {
     res.status(200).json({ ok: true });
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ error: 'not found' });
+    console.error('DELETE /api/todos/:id error:', err);
     res.status(500).json({ error: 'Failed to delete todo' });
   }
 });
@@ -79,9 +84,22 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-const server = app.listen(PORT, () => {
-  console.log(`Server listening on http://localhost:${PORT}`);
-});
+let server;
+
+async function start() {
+  try {
+    await prisma.$connect();
+    console.log('Prisma connected');
+    server = app.listen(PORT, () => {
+      console.log(`Server listening on http://localhost:${PORT}`);
+    });
+  } catch (e) {
+    console.error('Prisma connect error:', e);
+    process.exit(1);
+  }
+}
+
+start();
 
 async function gracefulShutdown() {
   try {
